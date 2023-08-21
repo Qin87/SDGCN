@@ -1,5 +1,5 @@
 #############################################
-# Copy and modify based on DiGCN and MagNET
+# Copied and modified from DiGCN and MagNET
 # https://github.com/flyingtango/DiGCN
 # https://github.com/matthew-hirn/magnet
 #############################################
