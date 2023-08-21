@@ -1,5 +1,5 @@
 # A spectral graph convolution for signed directed graphs via magnetic Laplacian  
-An official code of SDGCN (accepted in Neural Networks Journal)[https://www.sciencedirect.com/science/article/pii/S0893608023002502]
+An official code of SDGCN (accepted in Neural Networks Journal)(https://www.sciencedirect.com/science/article/pii/S0893608023002502)
 
 Model Overview
 ![sdgcn](https://github.com/twko05/SDGCN/assets/80378163/974773ae-1398-47e9-913f-1a0adf4c9c17)
