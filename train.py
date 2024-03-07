@@ -11,8 +11,9 @@ import torch.optim as optim
 from datetime import datetime
 import os, time, argparse, csv
 from layer.sdgcn import SDGCN_Edge
-from utils.edge_data_sign import generate_dataset_2class, in_out_degree, link_prediction_evaluation, load_directed_signed_graph_link, generate_dataset_2class_link , generate_dataset_2class_dir
+from utils.edge_data_sign import generate_dataset_2class, in_out_degree, link_prediction_evaluation, load_directed_signed_graph_link, generate_dataset_2class_link, generate_dataset_2class_dir
 from utils.hermitian import to_edge_dataset_sparse_sign
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="SD-GCN link sign prediction")
@@ -41,6 +42,7 @@ def parse_args():
 
     return parser.parse_args()
 
+
 def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     sparse_mx = sparse_mx.tocoo().astype(np.float32)
     indices = torch.from_numpy(
@@ -53,24 +55,24 @@ def sparse_mx_to_torch_sparse_tensor(sparse_mx):
 def main(args):
     data_name = args.dataset
     log_path = os.path.join(args.log_root, args.log_path, args.save_name)
-    if os.path.isdir(log_path) == False:
+    if os.path.isdir(log_path) is False:
         os.makedirs(log_path)
 
     dataset = load_directed_signed_graph_link(root='./dataset/data/' + data_name)
 
-    print("Dataset Loaded "+data_name)
+    print("Dataset Loaded " + data_name)
 
     if 'dataset' in locals():
         pos_edge, neg_edge = dataset
         pos_edge, neg_edge = torch.tensor(pos_edge).to(args.device), torch.tensor(neg_edge).to(args.device)
     p_max = torch.max(pos_edge).item()
     n_max = torch.max(neg_edge).item()
-    size = torch.max(torch.tensor([p_max,n_max])).item() + 1
+    size = torch.max(torch.tensor([p_max, n_max])).item() + 1
 
     if args.linkPred:
-        datasets = generate_dataset_2class_link(pos_edge, neg_edge, splits = args.ensemble, test_prob = 0.20, ratio=args.ratio)
+        datasets = generate_dataset_2class_link(pos_edge, neg_edge, splits=args.ensemble, test_prob=0.20, ratio=args.ratio)
     else:
-        datasets = generate_dataset_2class(pos_edge, neg_edge, splits = args.ensemble, test_prob = 0.20, ratio=args.ratio)
+        datasets = generate_dataset_2class(pos_edge, neg_edge, splits=args.ensemble, test_prob=0.20, ratio=args.ratio)
 
     results = np.zeros((args.ensemble, 2, 6))
 
@@ -80,19 +82,19 @@ def main(args):
         neg_edges = datasets[i]['train']['neg_edge']
 
         if args.signonly:
-            src, dst = pos_edges[:,0], pos_edges[:,1]
-            forward = [(i,j) for i,j in zip(src,dst)]
-            reverse = [(j,i) for i,j in zip(src,dst)]
-            pos_edges = np.array(forward+ reverse)
+            src, dst = pos_edges[:, 0], pos_edges[:, 1]
+            forward = [(i, j) for i, j in zip(src, dst)]
+            reverse = [(j, i) for i, j in zip(src, dst)]
+            pos_edges = np.array(forward + reverse)
 
-            src, dst = neg_edges[:,0], neg_edges[:,1]
-            forward = [(i,j) for i,j in zip(src,dst)]
-            reverse = [(j,i) for i,j in zip(src,dst)]
-            neg_edges = np.array(forward+ reverse)
+            src, dst = neg_edges[:, 0], neg_edges[:, 1]
+            forward = [(i, j) for i, j in zip(src, dst)]
+            reverse = [(j, i) for i, j in zip(src, dst)]
+            neg_edges = np.array(forward + reverse)
 
         if args.dironly:
-            pos_edges = np.array(torch.cat((torch.tensor(pos_edges), torch.tensor(neg_edges)),0))
-            neg_edges = np.array([[0,0],[1,1]])
+            pos_edges = np.array(torch.cat((torch.tensor(pos_edges), torch.tensor(neg_edges)), 0))
+            neg_edges = np.array([[0, 0], [1, 1]])
 
         L = to_edge_dataset_sparse_sign(args.q, pos_edges, neg_edges, args.K,
                                         size, laplacian=True, norm=args.not_norm, gcn_appr=False)
@@ -105,7 +107,7 @@ def main(args):
         X_real = X_img.clone()
 
         model = SDGCN_Edge(X_real.size(-1), L_real, L_img, K=args.K, label_dim=args.num_class_link,
-                            layer=args.layer, num_filter=args.num_filter, dropout=args.dropout)
+                           layer=args.layer, num_filter=args.num_filter, dropout=args.dropout)
         model = model.to(args.cuda)
         opt = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.l2)
 
@@ -129,7 +131,7 @@ def main(args):
             early_ = 100
 
         for epoch in range(args.epochs):
-            if early_stopping >= early_:#500:
+            if early_stopping >= early_:  # 500:
                 break
 
             ####################
@@ -176,16 +178,16 @@ def main(args):
                    ' test_f1_micro: {test_f1_micro:.3f}, test_f1_binary: {test_f1_binary:.3f}')
         log_str = log_str.format(test_acc=test_acc, test_auc=test_auc, test_f1_macro=test_f1_macro,
                                  test_f1_micro=test_f1_micro, test_f1_binary=test_f1_binary)
-        print('Model:'+ str(i) +' '+  log_str)
+        print('Model:' + str(i) + ' ' + log_str)
 
     print('Average Performance: test_acc:{:.3f}, test_auc: {:.3f}, test_f1_macro: {:.3f}, test_f1_micro: {:.3f}, test_f1_binary: {:.3f}'.format(
-        np.mean(results[:,1,1]), np.mean(results[:,1,2]), np.mean(results[:,1,4]), np.mean(results[:,1,3]), np.mean(results[:,1,5])))
+        np.mean(results[:, 1, 1]), np.mean(results[:, 1, 2]), np.mean(results[:, 1, 4]), np.mean(results[:, 1, 3]), np.mean(results[:, 1, 5])))
     return results
 
 
 if __name__ == "__main__":
     args = parse_args()
-    args.cuda = 'cuda:'+str(args.device)
+    args.cuda = 'cuda:' + str(args.device)
     args.q = np.pi * args.q
 
     save_name = args.method_name + 'lr' + str(int(args.lr * 1000)) + 'num_filters' + str(
